@@ -18,3 +18,4 @@ if __name__ == '__main__':
     evb.add_vote(block_num, rsa.encrypt(vote.encode(), public_key),code_num, dkb)
 
     dkb.count_block_in_EVB(evb)
+    dkb.print_results()
