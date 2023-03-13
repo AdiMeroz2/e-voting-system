@@ -16,20 +16,20 @@ class EVB:
 
         self.blockchain = Blockchain()
 
-    def add_vote(self, crypted_vote, nonce, dkb):
+    def add_vote(self, crypted_vote, nonce, private_key, dkb):
         # todo check candidate valid
         # todo DKB identification
         # if dkb.EVB_code_identification(code_num):
         #     self.blocks[block_num].add_vote(crpted_vote)
         #     print("ok")
-        self.vote(crypted_vote, nonce)
+        self.vote(crypted_vote, private_key, nonce)
 
 
     def get_block(self, num):
         if num < len(self.blocks):
             return self.blocks[num].get_votings()
 
-    def vote(self, crypted_vote, nonce):
+    def vote(self, crypted_vote, private_key, nonce):
         # todo before this step vote must be valid
 
         # block = {"vote": crypted_vote, "private key": private_key}
@@ -46,7 +46,7 @@ class EVB:
         return new_block.index
 
     def get_results(self, dkb):
-        for block in self.blockchain.chain[1:]:
-            dkb.count_vote(bytes(block.transactions.encode("latin1")))
+        for vote in self.blockchain.chain[1:]:
+            dkb.count_vote(bytes(vote.transactions.encode("latin1")))
 
 

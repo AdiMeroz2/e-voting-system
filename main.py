@@ -15,7 +15,7 @@ if __name__ == '__main__':
     public_key, private_key, code_num = dkb.voter_identification(id, name)
     # print("please choose the candidate you wish to vote for: 1.xxx 2.yyy 3.zzz")
     vote = "1"
-    evb.add_vote(rsa.encrypt(vote.encode(), dkb.get_public_key()), code_num, dkb)
+    evb.add_vote(rsa.encrypt(vote.encode(), dkb.get_public_key()),private_key, code_num, dkb)
 
     # print("please enter name: ")
     name = "Bob"
@@ -25,8 +25,7 @@ if __name__ == '__main__':
     public_key, private_key, code_num = dkb.voter_identification(id, name)
     # print("please choose the candidate you wish to vote for: 1.xxx 2.yyy 3.zzz")
     vote = "2"
-    evb.add_vote(rsa.encrypt(vote.encode(), dkb.get_public_key()), code_num, dkb)
-    evb.get_results(dkb)
+    evb.add_vote(rsa.encrypt(vote.encode(), dkb.get_public_key()), private_key, code_num, dkb)
 
-    # dkb.count_block_in_EVB(evb)
+    evb.get_results(dkb)
     dkb.print_results()
