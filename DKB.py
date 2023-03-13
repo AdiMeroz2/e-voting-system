@@ -1,7 +1,7 @@
 from random import randint
 
 import rsa
-
+# from Crypto.PublicKey import RSA
 
 # class Block:
 #     """
@@ -38,14 +38,12 @@ class DKB:
         # self.used_certificate_codes = {}  # a dictionary of all the cerificate number that have been used
         self.candidate_vote_num = {}
 
-        self.public_key = None
-        self.private_key = None
+        self.public_key, self.private_key = self.generate_key_pair()
         self.generate_key_pair()
 
     def generate_key_pair(self):
         public_key, private_key = rsa.newkeys(2048)
-        self.public_key = public_key
-        self.private_key = private_key
+        return public_key, private_key
 
     # def generate_blocks(self):
     #     for i in range(self.block_num):
@@ -67,7 +65,8 @@ class DKB:
             # block = self.blocks[ran_block_num]
             code_num = self.simple_code_generator()
             self.certificate_codes[code_num] = self.legal_voter_dic[id_num]
-            return self.public_key, self.private_key, code_num
+            user_public_key, user_private_key = self.generate_key_pair()
+            return user_public_key, user_private_key, code_num
         print("identification failed")
         return False
 
@@ -133,7 +132,7 @@ class DKB:
                 self.candidate_vote_num[vote_res] += 1
 
     def count_vote(self, vote):
-        vote_res = rsa.decrypt(vote, self.private_key)
+        vote_res = rsa.decrypt(vote,self.private_key)
         vote_res = vote_res.decode()
         if vote_res not in self.candidate_vote_num.keys():
             self.candidate_vote_num[vote_res] = 1
@@ -143,6 +142,9 @@ class DKB:
     def print_results(self):
         for candidate, votes in self.candidate_vote_num.items():
             print(f"candidate num: {candidate}, num of votes: {votes}")
+
+    def get_public_key(self):
+        return self.public_key
 
 
 class VoterCertificate:

@@ -3,9 +3,9 @@ import json
 from time import time
 
 class Block:
-    def __init__(self, index, transactions, previous_hash, nonce=0):
+    def __init__(self, index, vote, previous_hash, nonce=0):
         self.index = index
-        self.transactions = transactions
+        self.transactions = vote
         self.previous_hash = previous_hash
         self.nonce = nonce
 
@@ -26,7 +26,7 @@ class Blockchain:
         self.difficulty = 2
 
     def create_genesis_block(self):
-        genesis_block = Block(0, [], "0")
+        genesis_block = Block(0, [], None, "0")
         genesis_block.hash = genesis_block.compute_hash()
         self.chain.append(genesis_block)
 
@@ -60,18 +60,18 @@ class Blockchain:
     def add_new_transaction(self, transaction):
         self.unconfirmed_transactions.append(transaction)
 
-    def mine(self):
-        if not self.unconfirmed_transactions:
-            return False
-
-        last_block = self.last_block
-
-        new_block = Block(index=last_block.index + 1,
-                          transactions=self.unconfirmed_transactions,
-                          timestamp=time(),
-                          previous_hash=last_block.hash)
-
-        proof = self.proof_of_work(new_block)
-        self.add_block(new_block, proof)
-        self.unconfirmed_transactions = []
-        return new_block.index
+    # def mine(self):
+    #     if not self.unconfirmed_transactions:
+    #         return False
+    #
+    #     last_block = self.last_block
+    #
+    #     new_block = Block(index=last_block.index + 1,
+    #                       vote=self.unconfirmed_transactions,
+    #                       timestamp=time(),
+    #                       previous_hash=last_block.hash)
+    #
+    #     proof = self.proof_of_work(new_block)
+    #     self.add_block(new_block, proof)
+    #     self.unconfirmed_transactions = []
+    #     return new_block.index

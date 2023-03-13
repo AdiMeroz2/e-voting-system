@@ -4,6 +4,10 @@ import rsa
 
 from DKB import DKB, VoterCertificate
 from BlockChain import Block, Blockchain
+from nacl.encoding import Base64Encoder
+# import base64
+from base64 import b64decode
+
 class EVB:
     def __init__(self, num):
         self.blocks = []
@@ -28,9 +32,10 @@ class EVB:
     def vote(self, crypted_vote, nonce):
         # todo before this step vote must be valid
 
+        # block = {"vote": crypted_vote, "private key": private_key}
         last_block = self.blockchain.last_block
         new_block = Block(index=last_block.index + 1,
-                          transactions=crypted_vote.decode("latin1"),
+                          vote=crypted_vote.decode("latin1"),
                           previous_hash=last_block.hash,
                           nonce=nonce)
 
