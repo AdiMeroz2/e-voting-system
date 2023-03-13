@@ -3,11 +3,41 @@ from random import randint
 import rsa
 
 
-class Block:
+# class Block:
+#     """
+#     each block stores a public key and a private key, the blocks are a part of the DKB
+#     """
+#     def __init__(self):
+#         self.public_key = None
+#         self.private_key = None
+#         self.generate_key_pair()
+#
+#     def generate_key_pair(self):
+#         public_key, private_key = rsa.newkeys(2048)
+#         self.public_key = public_key
+#         self.private_key = private_key
+#
+#     def get_private_key(self):
+#         return self.private_key
+#
+#     def get_public_key(self):
+#         return self.public_key
+
+class DKB:
     """
-    each block stores a public key and a private key, the blocks are a part of the DKB
+    In charge of identifying the voters,
+    once identification success then chooses a random block and returns its public key
     """
-    def __init__(self):
+    def __init__(self, num):
+        # self.blocks = []  # a list of blocks
+        # self.block_num = num  # total number of blocks
+        self.legal_voter_dic = {'1111': VoterCertificate("Alice", '1111'), '2222': VoterCertificate("Bob", '2222')} #todo temporary
+        # self.generate_blocks()
+
+        self.certificate_codes = {}
+        # self.used_certificate_codes = {}  # a dictionary of all the cerificate number that have been used
+        self.candidate_vote_num = {}
+
         self.public_key = None
         self.private_key = None
         self.generate_key_pair()
@@ -17,40 +47,9 @@ class Block:
         self.public_key = public_key
         self.private_key = private_key
 
-    def get_private_key(self):
-        return self.private_key
-
-    def get_public_key(self):
-        return self.public_key
-
-class BlockChain:
-    def __init__(self):
-        pass
-
-
-class ProofOfWork:
-    def __init__(self):
-        pass
-
-
-class DKB:
-    """
-    In charge of identifying the voters,
-    once identification success then chooses a random block and returns its public key
-    """
-    def __init__(self, num):
-        self.blocks = []  # a list of blocks
-        self.block_num = num  # total number of blocks
-        self.legal_voter_dic = {'1111': VoterCertificate("Alice", '1111'), '2222': VoterCertificate("Bob", '2222')} #todo temporary
-        self.generate_blocks()
-
-        self.certificate_codes = {}
-        # self.used_certificate_codes = {}  # a dictionary of all the cerificate number that have been used
-        self.candidate_vote_num = {}
-
-    def generate_blocks(self):
-        for i in range(self.block_num):
-            self.blocks.append(Block())
+    # def generate_blocks(self):
+    #     for i in range(self.block_num):
+    #         self.blocks.append(Block())
 
     def voter_identification(self, id_num, name):
         """
@@ -63,11 +62,12 @@ class DKB:
                  * a code that the users uses to prove that he passed the identification
         """
         if self.check_if_valid_voter(id_num, name):
-            ran_block_num = randint(0, self.block_num - 1)
-            block = self.blocks[ran_block_num]
+            # todo initialize public and private key for user
+            # ran_block_num = randint(0, self.block_num - 1)
+            # block = self.blocks[ran_block_num]
             code_num = self.simple_code_generator()
             self.certificate_codes[code_num] = self.legal_voter_dic[id_num]
-            return ran_block_num, block.get_public_key(), code_num
+            return self.public_key, self.private_key, code_num
         print("identification failed")
         return False
 
@@ -131,6 +131,14 @@ class DKB:
                 self.candidate_vote_num[vote_res] = 1
             else:
                 self.candidate_vote_num[vote_res] += 1
+
+    def count_vote(self, vote):
+        vote_res = rsa.decrypt(vote, self.private_key)
+        vote_res = vote_res.decode()
+        if vote_res not in self.candidate_vote_num.keys():
+            self.candidate_vote_num[vote_res] = 1
+        else:
+            self.candidate_vote_num[vote_res] += 1
 
     def print_results(self):
         for candidate, votes in self.candidate_vote_num.items():

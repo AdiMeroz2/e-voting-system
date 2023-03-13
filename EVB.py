@@ -1,38 +1,47 @@
+from datetime import time
+
+import rsa
+
 from DKB import DKB, VoterCertificate
-
-class Block:
-    def __init__(self):
-        self.voting_list = []
-
-    def add_vote(self, vote):
-        self.voting_list.append(vote)
-
-    def get_votings(self):
-        return self.voting_list
-
-class BlockChain:
-    def __init__(self):
-        pass
-
+from BlockChain import Block, Blockchain
 class EVB:
     def __init__(self, num):
         self.blocks = []
         self.block_num = num
-        self.generate_blocks()
         self.used_certificate_nums = {}
 
-    def generate_blocks(self):
-        for i in range(self.block_num):
-            self.blocks.append(Block())
+        self.blockchain = Blockchain()
 
-    def add_vote(self, block_num, crpted_vote, code_num, dkb):
-        # todo check certification before adding vote
-        # todo shouldn't allow to vote twice
-        if dkb.EVB_code_identification(code_num):
-            self.blocks[block_num].add_vote(crpted_vote)
-            print("ok")
+    def add_vote(self, crypted_vote, nonce, dkb):
+        # todo check candidate valid
+        # todo DKB identification
+        # if dkb.EVB_code_identification(code_num):
+        #     self.blocks[block_num].add_vote(crpted_vote)
+        #     print("ok")
+        self.vote(crypted_vote, nonce)
+
 
     def get_block(self, num):
         if num < len(self.blocks):
             return self.blocks[num].get_votings()
+
+    def vote(self, crypted_vote, nonce):
+        # todo before this step vote must be valid
+
+        last_block = self.blockchain.last_block
+        new_block = Block(index=last_block.index + 1,
+                          transactions=crypted_vote.decode("latin1"),
+                          previous_hash=last_block.hash,
+                          nonce=nonce)
+
+        proof = self.blockchain.proof_of_work(new_block)
+        self.blockchain.add_block(new_block, proof)
+        print("Vote recorded successfully.")
+
+        return new_block.index
+
+    def get_results(self, dkb):
+        for block in self.blockchain.chain[1:]:
+            dkb.count_vote(bytes(block.transactions.encode("latin1")))
+
 
