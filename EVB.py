@@ -9,9 +9,7 @@ from nacl.encoding import Base64Encoder
 from base64 import b64decode
 
 class EVB:
-    def __init__(self, num):
-        self.blocks = []
-        self.block_num = num
+    def __init__(self):
         self.used_certificate_nums = {}
 
         self.blockchain = Blockchain()
@@ -23,11 +21,6 @@ class EVB:
         #     self.blocks[block_num].add_vote(crpted_vote)
         #     print("ok")
         self.vote(crypted_vote, private_key, nonce)
-
-
-    def get_block(self, num):
-        if num < len(self.blocks):
-            return self.blocks[num].get_votings()
 
     def vote(self, crypted_vote, private_key, nonce):
         # todo before this step vote must be valid
