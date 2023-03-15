@@ -1,8 +1,5 @@
-from random import randint
-
 import rsa
 from Crypto.Hash import SHA256
-from Crypto.Signature import pkcs1_15
 
 
 class DKB:
@@ -10,8 +7,10 @@ class DKB:
     In charge of identifying the voters,
     once identification success then chooses a random block and returns its public key
     """
+
     def __init__(self):
-        self.legal_voter_dic = {'1111': VoterCertificate("Alice", '1111'), '2222': VoterCertificate("Bob", '2222')} #todo temporary
+        self.legal_voter_dic = {'1111': VoterCertificate("Alice", '1111'),
+                                '2222': VoterCertificate("Bob", '2222')}  # todo temporary
 
         self.certificate_codes = {}
         self.candidate_vote_num = {}
@@ -22,7 +21,6 @@ class DKB:
     def generate_key_pair(self):
         public_key, private_key = rsa.newkeys(2048)
         return public_key, private_key
-
 
     def voter_identification(self, name, id_num):
         """
@@ -35,10 +33,6 @@ class DKB:
                  * a code that the users uses to prove that he passed the identification
         """
         if self.check_if_valid_voter(id_num, name):
-            # ran_block_num = randint(0, self.block_num - 1)
-            # block = self.blocks[ran_block_num]
-            # code_num = self.simple_code_generator()
-            # self.certificate_codes[code_num] = self.legal_voter_dic[id_num]
             voter = self.legal_voter_dic[id_num]
             user_public_key, user_private_key = self.generate_key_pair()
             voter.set_public_key(user_public_key)
@@ -75,15 +69,13 @@ class DKB:
             return True
         return False
 
-    def simple_code_generator(self):
-        # simple code generator to give the voter, maybe need to change
-        code = randint(0, 1000)
-        if code in self.certificate_codes.keys():
-            code = randint(0,1000)
-        return code
-
     def count_vote(self, vote):
-        vote_res = rsa.decrypt(vote,self.private_key)
+        """
+        get a vote from EVB and decrypt it, and then counts the vote by adding it to candidate_vote_num dictionary
+        :param vote:
+        :return:
+        """
+        vote_res = rsa.decrypt(vote, self.private_key)
         vote_res = vote_res.decode()
         if vote_res not in self.candidate_vote_num.keys():
             self.candidate_vote_num[vote_res] = 1
@@ -100,51 +92,53 @@ class DKB:
     """new added func"""
 
     def get_voter_from_EVB(self, enc_voter_details):
+        """
+        gets the voter's information from EVB and verifies it's identity
+        :param enc_voter_details:
+        :return:
+        """
         voter_info = self.RSA_decryption(self.private_key, enc_voter_details)
-        voter_id = voter_info[:4]
+        voter_id = voter_info[:4]  # todo think of a better way to get the id and public key
         voter_public_key = voter_info[5:]
-
         return self.verify_voter_details_from_EVB(voter_id.decode(), voter_public_key)
 
-    def verify_voter_details_from_EVB(self,id: str, publicKey):
+    def verify_voter_details_from_EVB(self, id: str, publicKey):
         return id in self.legal_voter_dic.keys() \
                and self.legal_voter_dic[id].get_public_key().save_pkcs1(format='DER') == publicKey
 
-    def verify_signature(self, enc_message, signature,voter_publicKey):
-        h = SHA256.new(enc_message)
+    def verify_signature(self, enc_message, signature, voter_publicKey):
+        # todo currently the DKB doesn't receives any signature
         try:
-            # pkcs1_15.new(voter_publicKey).verify(h, signature)
             rsa.verify(enc_message, signature, voter_publicKey)
         except (ValueError, TypeError):
             return False
         return True
 
-    def verify_voter_details_and_signature(self,enc_message, enc_voter_details, signature):
+    def verify_voter_details_and_signature(self, enc_message, enc_voter_details, signature):
+        # todo currently the DKB doesn't receives any signature
         # after receiving voter details and signature
-        id, voter_publicKey = self.decrypte_data(enc_voter_details,self.private_key).split()
+        id, voter_publicKey = self.RSA_decryption(self.private_key, enc_voter_details).split()
         # voter_publicKey = RSA.import_key(voter_publicKey)
-        if not self.verify_voter_details_from_EVB(id,voter_publicKey):
+        if not self.verify_voter_details_from_EVB(id, voter_publicKey):
             return False
-        if not self.verify_signature(enc_message,signature,voter_publicKey):
+        if not self.verify_signature(enc_message, signature, voter_publicKey):
             return False
         return True
 
     def RSA_encryption(self, key, byte_message):
-        # (public_key, private_key) = get_keys()
-        # txt = json.dumps(txt)
         result = []
-        for n in range(0,len(byte_message),245):
-            part = byte_message[n:n+245]
+        for n in range(0, len(byte_message), 245):
+            part = byte_message[n:n + 245]
             result.append(rsa.encrypt(part, key))
-        # print(len(result),len(result[0]))
         return b''.join(result)
 
     def RSA_decryption(self, key, message):
         result = []
-        for n in range(0,len(message),256):
-            part = message[n:n+256]
+        for n in range(0, len(message), 256):
+            part = message[n:n + 256]
             result.append(rsa.decrypt(part, key))
         return b''.join(result)
+
 
 class VoterCertificate:
     # once a person is verified as a legal voter, his status would be stored in this class

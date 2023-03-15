@@ -15,8 +15,8 @@ if __name__ == '__main__':
     vote = "1"
     voter_1.choose_vote(vote)
     packet_1 = voter_1.create_packet_to_EVB(dkb.public_key, evb.public_key)
-
     evb.get_packet_from_user(packet_1, dkb)
+
 
     voter_2 = Voter(name="Bob", id="2222")
     cer_2 = VoterCertificate(voter_2.get_name(), voter_2.get_id())
@@ -25,7 +25,6 @@ if __name__ == '__main__':
     vote = "2"
     voter_2.choose_vote(vote)
     packet_2 = voter_2.create_packet_to_EVB(dkb.public_key, evb.public_key)
-
     evb.get_packet_from_user(packet_2, dkb)
 
     evb.get_results(dkb)
