@@ -9,7 +9,7 @@ if __name__ == '__main__':
     evb = EVB()
 
     voter_1 = Voter(name="Alice", id="1111")  # todo maybe change this to something that asks input from the user
-    cer_1 = VoterCertificate("Alice", "1111")
+    cer_1 = VoterCertificate("Alice", "1111")  # todo this need to be crypted by DKB's publlic key
     public_key, private_key = dkb.voter_identification(voter_1.get_name(), voter_1.get_id())
     voter_1.set_key_pair(public_key=public_key, private_key=private_key)
     vote = "1"

@@ -14,7 +14,7 @@ class EVB:
         self.used_certificate_nums = {}
 
         self.blockchain = Blockchain()
-        self.public_key ,self.private_key = self.generate_key_pair()
+        self.public_key, self.private_key = self.generate_key_pair()
 
     def generate_key_pair(self):
         public_key, private_key = rsa.newkeys(2048)

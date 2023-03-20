@@ -2,6 +2,8 @@ from hashlib import sha256
 import json
 from time import time
 
+
+# todo allow multiple votes in one block
 class Block:
     def __init__(self, index, vote, previous_hash, nonce=0):
         self.index = index
@@ -17,6 +19,7 @@ class Block:
         """
         block_string = json.dumps(self.__dict__, sort_keys=True)
         return sha256(block_string.encode()).hexdigest()
+
 
 class Blockchain:
     def __init__(self):
@@ -60,18 +63,18 @@ class Blockchain:
     def add_new_transaction(self, transaction):
         self.unconfirmed_transactions.append(transaction)
 
-    # def mine(self):
-    #     if not self.unconfirmed_transactions:
-    #         return False
-    #
-    #     last_block = self.last_block
-    #
-    #     new_block = Block(index=last_block.index + 1,
-    #                       vote=self.unconfirmed_transactions,
-    #                       timestamp=time(),
-    #                       previous_hash=last_block.hash)
-    #
-    #     proof = self.proof_of_work(new_block)
-    #     self.add_block(new_block, proof)
-    #     self.unconfirmed_transactions = []
-    #     return new_block.index
+    def mine(self):
+        if not self.unconfirmed_transactions:
+            return False
+
+        last_block = self.last_block
+        new_block = Block(
+            index=last_block.index + 1,
+            vote=self.unconfirmed_transactions,
+            previous_hash=last_block.hash,
+        )
+        proof = self.proof_of_work(block=new_block)
+        self.add_block(new_block, proof)
+        self.unconfirmed_transactions = []
+
+        return new_block.index
