@@ -1,5 +1,4 @@
 import rsa
-from Crypto.Hash import SHA256
 
 
 class DKB:
@@ -9,22 +8,50 @@ class DKB:
     """
 
     def __init__(self):
-        self.legal_voter_dic = {'1111': VoterCertificate("Alice", '1111'),
-                                '2222': VoterCertificate("Bob", '2222')}  # todo temporary
+        """
+        initializes the class and creates a dictionary of legal voters, generates a key pair, and initializes
+         dictionaries to keep track of votes and certificate codes.
+        """
+        self.legal_voter_dic = {'111111111': VoterCertificate("Alice", '111111111'),
+                                '222222222': VoterCertificate("Bob", '222222222')}
 
         self.certificate_codes = {}
-        self.candidate_vote_num = {}
+        self.candidate_vote_num = {"Candidates 1": 0, "Candidates 2": 0, "Candidates 3": 0,
+                                   "Candidates 4": 0, "Candidates 5": 0, "Candidates 6": 0,
+                                   "Candidates 7": 0, "Candidates 8": 0, "Candidates 9": 0}
 
         self.public_key, self.private_key = self.generate_key_pair()
         self.generate_key_pair()
 
+    def get_candidates_list(self):
+        """
+        returns a list of candidates.
+        """
+        return list(self.candidate_vote_num.keys())
+
     def generate_key_pair(self):
+        """
+        generates an RSA key pair and returns the public and private keys.
+        :return:
+        """
         public_key, private_key = rsa.newkeys(2048)
         return public_key, private_key
 
-    def voter_identification(self, name, id_num):
+    def encrypt_keys(self,public_key,private_key,enc_key):
+        # Convert keys to bytes
+        public_key_bytes = public_key.save_pkcs1(format='DER')
+        private_key_bytes = private_key.save_pkcs1(format='DER')
+
+        # Encrypt the keys
+        encrypted_public_key = self.RSA_encryption(enc_key,public_key_bytes)
+        encrypted_private_key = self.RSA_encryption(enc_key,private_key_bytes)
+
+        return encrypted_public_key,encrypted_private_key
+
+    def voter_identification(self, name, id_num, id_public_key):
         """
-        identifies the voter according to self.legal_voter_dic
+        identifies the voter according to self.legal_voter_dic and returns the public key and private key for the voter.
+        :param id_public_key:
         :param id_num: the id of the voter
         :param name: the voters name
         :return: in case of valid voter, the algorithm will return the following things:
@@ -36,13 +63,14 @@ class DKB:
             voter = self.legal_voter_dic[id_num]
             user_public_key, user_private_key = self.generate_key_pair()
             voter.set_public_key(user_public_key)
-            return user_public_key, user_private_key
-        print("identification failed")
-        return False
+            # return user_public_key, user_private_key
+            return self.encrypt_keys(user_public_key, user_private_key,id_public_key)
+        print("Unregistered. Identification failed for name: " + name + " , id:" + id_num)
+        return None
 
     def check_if_valid_voter(self, id_num, name):
         """
-        given the name and id number, checks if the person has the right to vote
+        checks if the voter is valid based on their ID number and name.
         :param id_num:
         :param name:
         :return:
@@ -75,57 +103,84 @@ class DKB:
         :param vote:
         :return:
         """
-        vote_res = rsa.decrypt(vote, self.private_key)
-        vote_res = vote_res.decode()
-        if vote_res not in self.candidate_vote_num.keys():
-            self.candidate_vote_num[vote_res] = 1
-        else:
-            self.candidate_vote_num[vote_res] += 1
+        vote_nonce_res = rsa.decrypt(vote, self.private_key)
+        vote_nonce_res = vote_nonce_res.decode()
+        vote, nonce = vote_nonce_res.split(',')
+        self.candidate_vote_num[vote] += 1
 
     def print_results(self):
+        """
+        prints the results of the election.
+        :return:
+        """
+        print("THE RESULTS:")
         for candidate, votes in self.candidate_vote_num.items():
             print(f"candidate num: {candidate}, num of votes: {votes}")
 
     def get_public_key(self):
-        return self.public_key
-
-    """new added func"""
-
-    def get_voter_from_EVB(self, enc_voter_details):
         """
-        gets the voter's information from EVB and verifies it's identity
-        :param enc_voter_details:
+        returns the public key for the DKB.
         :return:
         """
-        voter_info = self.RSA_decryption(self.private_key, enc_voter_details)
-        voter_id = voter_info[:4]  # todo think of a better way to get the id and public key
-        voter_public_key = voter_info[5:]
-        return self.verify_voter_details_from_EVB(voter_id.decode(), voter_public_key)
+        return self.public_key
 
     def verify_voter_details_from_EVB(self, id: str, publicKey):
+        """
+        verifies that the ID and public key of the voter provided by EVB match the records in the system.
+        :param id:
+        :param publicKey:
+        :return:
+        """
         return id in self.legal_voter_dic.keys() \
                and self.legal_voter_dic[id].get_public_key().save_pkcs1(format='DER') == publicKey
 
-    def verify_signature(self, enc_message, signature, voter_publicKey):
-        # todo currently the DKB doesn't receives any signature
+    def verify_signature(self, vote, signature, voter_publicKey):
+        """
+        verifies that the vote was signed by the corresponding voter using their private key.
+        :param vote:
+        :param signature:
+        :param voter_publicKey:
+        :return:
+        """
         try:
-            rsa.verify(enc_message, signature, voter_publicKey)
+            rsa.verify(vote, signature, rsa.PublicKey.load_pkcs1(voter_publicKey, format='DER'))
         except (ValueError, TypeError):
+            print("wrong signature")
             return False
         return True
 
     def verify_voter_details_and_signature(self, enc_message, enc_voter_details, signature):
-        # todo currently the DKB doesn't receives any signature
-        # after receiving voter details and signature
-        id, voter_publicKey = self.RSA_decryption(self.private_key, enc_voter_details).split()
-        # voter_publicKey = RSA.import_key(voter_publicKey)
-        if not self.verify_voter_details_from_EVB(id, voter_publicKey):
+        """
+        decrypts the voter details using the DKB's private key, verifies the voter's ID and public key, verifies
+        the signature, and marks the voter as having voted.
+        :param enc_message:
+        :param enc_voter_details:
+        :param signature:
+        :return:
+        """
+        voter_info = self.RSA_decryption(self.private_key, enc_voter_details)
+        voter_id = voter_info[:9].decode()
+        voter_public_key = voter_info[10:]
+        if not self.verify_voter_details_from_EVB(voter_id, voter_public_key):
+            print("invalid voter details")
             return False
-        if not self.verify_signature(enc_message, signature, voter_publicKey):
+        if not self.verify_signature(enc_message, signature, voter_public_key):
+            print("invalid signature")
             return False
+        if self.legal_voter_dic[voter_id].get_voted_status():
+            print("voter can't vote twice")
+            return False
+        self.legal_voter_dic[voter_id].set_voted()
+        print(voter_id + " - marked as voted.")
         return True
 
     def RSA_encryption(self, key, byte_message):
+        """
+        encrypts a byte message using RSA.
+        :param key:
+        :param byte_message:
+        :return:
+        """
         result = []
         for n in range(0, len(byte_message), 245):
             part = byte_message[n:n + 245]
@@ -133,6 +188,12 @@ class DKB:
         return b''.join(result)
 
     def RSA_decryption(self, key, message):
+        """
+        decrypts a message using RSA.
+        :param key:
+        :param message:
+        :return:
+        """
         result = []
         for n in range(0, len(message), 256):
             part = message[n:n + 256]
